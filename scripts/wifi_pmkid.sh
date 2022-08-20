@@ -72,14 +72,14 @@ fi
 echo ""
 
 mv /root/bettercap-wifi-handshakes.pcap $dirinput
-hcxpcapngtool -o handshake-hash.txt bettercap-wifi-handshakes.pcap
+hcxpcapngtool -o $dirinput/handshake-hash.txt $dirinput/bettercap-wifi-handshakes.pcap
 echo "moved the .pcap file to $dirinput"
 echo "created handshake-hash.txt to crack the hash with hashcat"
 echo ""
 echo "Do you want to crack the password with hashcat?"
 echo "0) yes"
 echo "1) no"
-read -n "Choice: " choice
+read -p "Choice: " choice
 echo ""
 if [ $choice -gt 1 ] || [ $choice -lt 0 ]; then
 	$choice=1
@@ -91,8 +91,10 @@ if [ $choice -eq 0 ]; then
 	echo ""
 else
 	echo ""
-	echo "Last thing to do is cracking thr password from handshake-hash.txt with hashcat by using:"
+	echo "Last thing to do is cracking the password from handshake-hash.txt with hashcat by using:"
 	echo "hashcat -m22000 handshae-hash.txt wordlist.txt"
 	echo ""
 fi
 echo "That's it... xD"
+echo ""
+echo ""
